@@ -1,4 +1,5 @@
 import argparse
+import json
 import sys
 from logic import calculate_split
 
@@ -28,6 +29,12 @@ def parse_args():
         default=None,
         help="Procentandel som en specifik person betalar av totalbeloppet (t.ex. 50)",
     )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        default=False,
+        help="Exportera resultat som JSON istället för mänskligt läsbar text",
+    )
     return parser.parse_args()
 
 
@@ -42,19 +49,22 @@ def main():
         print(f"Fel: {e}", file=sys.stderr)
         sys.exit(1)
 
-    print(f"Totalbelopp med dricks: {result['total_med_dricks']:.2f}")
-
-    if args.special_percent is not None:
-        print(
-            f"Specialperson ({args.special_percent:.0f}%): "
-            f"{result['special_person_share']:.2f}"
-        )
-        print(
-            f"Övriga {args.people - 1} personer: "
-            f"{result['others_share']:.2f} var"
-        )
+    if args.json:
+        print(json.dumps(result, indent=2))
     else:
-        print(f"Varje person betalar: {result['per_person']:.2f}")
+        print(f"Totalbelopp med dricks: {result['total_med_dricks']:.2f}")
+
+        if args.special_percent is not None:
+            print(
+                f"Specialperson ({args.special_percent:.0f}%): "
+                f"{result['special_person_share']:.2f}"
+            )
+            print(
+                f"Övriga {args.people - 1} personer: "
+                f"{result['others_share']:.2f} var"
+            )
+        else:
+            print(f"Varje person betalar: {result['per_person']:.2f}")
 
 
 if __name__ == "__main__":

@@ -43,10 +43,13 @@ def calculate_split(amount, people, tip_percent, special_person_percent=None):
             "total_med_dricks": total_med_dricks,
             "special_person_share": special_person_share,
             "others_share": others_share,
+            "per_person": None,
         }
 
     per_person = total_med_dricks / people
     return {
         "total_med_dricks": total_med_dricks,
+        "special_person_share": None,
+        "others_share": None,
         "per_person": per_person,
     }

@@ -1,3 +1,4 @@
+import json
 import pytest
 from logic import calculate_split
 
@@ -97,3 +98,53 @@ class TestCalculateSplit:
     def test_special_person_negative_percent_raises(self):
         with pytest.raises(ValueError, match="Specialprocent måste vara mellan 0 och 100"):
             calculate_split(1000, 3, 10, special_person_percent=-5)
+
+    # --- Tests for JSON serialization ---
+
+    def test_result_is_json_serializable_normal(self):
+        """Result dictionary must be JSON-serializable for normal split."""
+        result = calculate_split(1000, 4, 10)
+        json_str = json.dumps(result, indent=2)
+        assert "total_med_dricks" in json_str
+        assert "per_person" in json_str
+        assert "special_person_share" in json_str
+        assert "others_share" in json_str
+        # Verify round-trip
+        parsed = json.loads(json_str)
+        assert parsed["total_med_dricks"] == pytest.approx(1100.0)
+        assert parsed["per_person"] == pytest.approx(275.0)
+        assert parsed["special_person_share"] is None
+        assert parsed["others_share"] is None
+
+    def test_result_is_json_serializable_special(self):
+        """Result dictionary must be JSON-serializable for special person split."""
+        result = calculate_split(1000, 4, 10, special_person_percent=50)
+        json_str = json.dumps(result, indent=2)
+        assert "total_med_dricks" in json_str
+        assert "special_person_share" in json_str
+        assert "others_share" in json_str
+        assert "per_person" in json_str
+        # Verify round-trip
+        parsed = json.loads(json_str)
+        assert parsed["total_med_dricks"] == pytest.approx(1100.0)
+        assert parsed["special_person_share"] == pytest.approx(550.0)
+        assert parsed["others_share"] == pytest.approx(183.33333333333334)
+        assert parsed["per_person"] is None
+
+    def test_result_has_all_four_keys(self):
+        """Result dictionary must always contain exactly four keys."""
+        result_normal = calculate_split(1000, 4, 10)
+        result_special = calculate_split(1000, 4, 10, special_person_percent=50)
+        expected_keys = {"total_med_dricks", "special_person_share", "others_share", "per_person"}
+        assert set(result_normal.keys()) == expected_keys
+        assert set(result_special.keys()) == expected_keys
+
+    def test_result_values_are_json_safe_types(self):
+        """All values in result must be JSON-safe types (int, float, None)."""
+        result_normal = calculate_split(1000, 4, 10)
+        result_special = calculate_split(1000, 4, 10, special_person_percent=50)
+        for result in (result_normal, result_special):
+            for key, value in result.items():
+                assert isinstance(value, (int, float, type(None))), (
+                    f"Key '{key}' has non-JSON-safe type: {type(value)}"
+                )
